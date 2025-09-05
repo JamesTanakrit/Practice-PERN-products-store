@@ -48,7 +48,3 @@ initDB()
     console.error("Failed to initialize the database:", error);
     process.exit(1);
   });
-
-// app.listen(PORT, () => {
-//   console.log(`Server is running on http://localhost:${PORT}`);
-// });
