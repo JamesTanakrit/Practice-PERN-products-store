@@ -22,18 +22,21 @@ export const createProduct = async (req, res) => {
   if (!name || !price || !image) {
     return res
       .status(400)
-      .json({ success: false, error: "All fields are required" });
+      .json({ success: false, message: "All fields are required" });
   }
 
   try {
-    const response = await client.query(`
-      INSERT INTO products (name, price, image)
-      VALUES (${name},${price},${image})
-      RETURNING *
-    `);
-    const newProduct = response.rows;
-    console.log("new product added:", newProduct[0]);
-    res.status(201).json({ success: true, data: newProduct[0] });
+    const response = await client.query(
+      `
+        INSERT INTO products (name, price, image)
+        VALUES ($1, $2, $3)
+        RETURNING *
+      `,
+      [name, price, image]
+    );
+    const newProduct = response.rows[0];
+    console.log("new product added:", newProduct);
+    res.status(201).json({ success: true, data: newProduct });
   } catch (error) {
     console.error("Error in createProduct function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -43,12 +46,15 @@ export const createProduct = async (req, res) => {
 export const getProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    const response = await client.query(`
+    const response = await client.query(
+      `
       SELECT * FROM products
-      WHERE id=${id}
-    `);
-    const product = response.rows;
-    res.status(201).json({ success: true, data: product[0] });
+      WHERE id=$1
+    `,
+      [id]
+    );
+    const product = response.rows[0];
+    res.status(201).json({ success: true, data: product });
   } catch (error) {
     console.error("Error in getProduct function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -59,22 +65,26 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const { name, price, image } = req.body;
   try {
-    const response = await client.query(`
+    const response = await client.query(
+      `
       UPDATE products
-      SET name=${name}, price=${price}, image=${image}
-      WHERE id=${id}
+      SET name=$1, price=$2, image=$3
+      WHERE id=$4
       RETURNING *
-    `);
-    const updatedProduct = response.rows;
+    `,
+      [name, price, image, id]
+    );
 
-    if (updatedProduct.length === 0) {
+    if (response.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
       });
     }
 
-    res.status(201).json({ success: true, data: updatedProduct[0] });
+    const updatedProduct = response.rows[0];
+
+    res.status(201).json({ success: true, data: updatedProduct });
   } catch (error) {
     console.error("Error in updateProduct function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -84,21 +94,24 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    const response = await client.query(`
+    const response = await client.query(
+      `
       DELETE FROM products
-      WHERE id=${id}
+      WHERE id=$1
       RETURNING *
-    `);
+    `,
+      [id]
+    );
 
-    const deletedProduct = response.rows;
-
-    if (deletedProduct.length === 0) {
+    if (response.rows.length === 0) {
       return res
         .status(404)
         .json({ success: false, message: "Product not found" });
     }
 
-    res.status(201).json({ success: true, data: deletedProduct[0] });
+    const deletedProduct = response.rows[0];
+
+    res.status(201).json({ success: true, data: deletedProduct });
   } catch (error) {
     console.error("Error in deleteProduct function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
