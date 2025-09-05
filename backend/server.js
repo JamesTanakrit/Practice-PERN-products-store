@@ -17,15 +17,38 @@ app.use(express.json());
 app.use(helmet()); // Security headers
 app.use(morgan("dev")); // Logging requests
 
-client.connect();
-// //test the connection
-client
-  .query("SELECT NOW()")
-  .then((res) => console.log("Database connected:", res.rows[0]))
-  .catch((err) => console.error("Database connection error:", err.stack));
-
 app.use("/api/products", productRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+async function initDB() {
+  try {
+    await client.connect();
+    client.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        image VARCHAR(255) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("Connected to PostgreSQL database");
+  } catch (error) {
+    console.error("Failed to connect to the database:", error);
+    process.exit(1);
+  }
+}
+
+initDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Failed to initialize the database:", error);
+    process.exit(1);
+  });
+
+// app.listen(PORT, () => {
+//   console.log(`Server is running on http://localhost:${PORT}`);
+// });
