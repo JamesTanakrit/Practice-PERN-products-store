@@ -53,6 +53,13 @@ export const getProduct = async (req, res) => {
     `,
       [id]
     );
+
+    if (response.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
     const product = response.rows[0];
     res.status(201).json({ success: true, data: product });
   } catch (error) {
